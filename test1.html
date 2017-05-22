@@ -1,0 +1,165 @@
+﻿<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Three框架</title>
+		<script src="js/three.js" data-ke-src="js/Three.js"></script>
+        <script src="js/Stats.js"></script>
+		<style type="text/css">
+            *{margin:0;padding:0;}
+            body{background:#000;}
+			div#canvas-frame {
+				border: none;
+				width: 600px;
+				height: 600px;
+                border:8px solid #666;
+			}
+		</style>
+	</head>
+    <body onload="threeStart();">
+         <div id="canvas-frame"></div>
+    </body>
+</html>
+<script>
+    var renderer = null;//渲染器
+    var camera = null;//相机
+    var scene = null;//场景
+    var light = null;//光源
+    var stats = null;
+    var width = 0;
+    var height = 0;
+
+    function initThree() {
+        width = document.getElementById('canvas-frame').clientWidth;
+        height = document.getElementById('canvas-frame').clientHeight;
+        renderer = new THREE.WebGLRenderer({
+            antialias:true,//antialias:true/false是否开启反锯齿
+            precision:"highp",//precision:highp/mediump/lowp着色精度选择
+            alpha:true,//alpha:true/false是否可以设置背景色透明
+            premultipliedAlpha:false,//?
+            stencil:false,//?
+            preserveDrawingBuffer:true,//preserveDrawingBuffer:true/false是否保存绘图缓冲
+            maxLights:1//maxLights:最大灯光数
+
+        });
+        renderer.setSize(width, height);
+        document.getElementById('canvas-frame').appendChild(renderer.domElement);
+        renderer.setClearColor(0x222222, 1);//背景颜色 与透明度
+	
+		/*+++++++++++++++++ 统计对象 ++++++++++++++++++++*/
+        stats = new Stats();
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.right = '0px';
+        stats.domElement.style.top = '0px';
+        document.getElementById('canvas-frame').appendChild(stats.domElement);
+    }
+    function initCamera() {
+        camera = new THREE.PerspectiveCamera(
+                45,//眼睛睁开45度  角度越大画面越小  
+                width / height,//画面 纵横比
+                1,//近视锥平面
+                10000///远视锥平面
+        );
+        camera.position.x = 0;//相机的坐标位置
+        camera.position.y = 0;
+        camera.position.z = 1000;
+        camera.up.x = 0;
+        camera.up.y = 0;
+        camera.up.z = 0;
+        camera.lookAt({x : 0, y : 0, z : 0});//设置视野的中心坐标
+    }
+    function initScene() {
+        scene = new THREE.Scene();
+        //console.log(scene)
+    }
+
+
+    function initLight() {//return false
+        // A start
+		//方向光 平行光又称为方向光（Directional Light），是一组没有衰减的平行的光线，类似太阳光的效果。
+        light = new THREE.DirectionalLight(0xFF0000,1);//颜色 和 光线的强度[0-1]
+        // 位置不同，方向光作用于物体的面也不同，看到的物体各个面的颜色也不一样
+        light.position.set(-100,0,0);
+        scene.add(light);
+        // A end
+    }
+
+    var mesh = null;
+    function initObject() {
+		
+		
+		//线条
+        
+        
+		
+		var geometry = new THREE.Geometry();//几何体
+        var color1 = new THREE.Color( 0x444444 ),
+			color2 = new THREE.Color( 0xFF0000 );
+
+        // 线的材质可以由2点的颜色决定
+        var p1 = new THREE.Vector3( -100, 100, 100 ),
+            p2 = new THREE.Vector3(  100, 100, -100 ),
+            p3 = new THREE.Vector3(  100, 100, 100 ),
+            p4 = new THREE.Vector3(  100, 200, 100 );
+        geometry.vertices.push( p1, p2, p3 , p4 );
+        geometry.colors.push( color1, color2, color2, color2 );
+		
+		// 线条材质
+		var material = new THREE.LineBasicMaterial( { 
+									vertexColors: THREE.VertexColors,//定点颜色  这样设置后  就会启用geometry.colors的颜色作为线条顶点的颜色
+									linewidth: 1,//3d世界线条不能设置宽度  或者说拥有宽度的线条应该把它当作几何体来理解
+									opacity: 1,
+									//color: 0x000000, //这个颜色值可以覆盖定点颜色 
+		} );
+		
+        var line = new THREE.LineSegments( geometry, material, THREE.LinePieces );//生成线条  第三个参数是 线的类型  改为THREE.LinePieces 就是线段 由前2个定点构成的线段
+        scene.add(line);
+		
+		
+		
+
+
+
+//////////////////
+        var geometry = new THREE.CubeGeometry( 200, 100, 50,4,4);
+        var material = new THREE.MeshLambertMaterial( { color:0xffffff} );
+        mesh = new THREE.Mesh( geometry,material);
+        mesh.position.set(100,0,0);
+        mesh.rotation.x = 50
+        mesh.rotation.y = -50
+        scene.add(mesh);
+
+        var geometry = new THREE.CubeGeometry(100,100,100);
+        var material = new THREE.MeshBasicMaterial({color: 0x666666});
+        var cube = new THREE.Mesh(geometry, material);
+        cube.position.x = 0;
+        cube.position.y = 200;
+        cube.position.z = 0;
+        scene.add(cube);
+	
+		var mesh_ = mesh.clone();
+		mesh_.position.set(400,0,0);
+		scene.add(mesh_);
+
+
+
+    }
+    function render()
+    {
+        renderer.clear();
+        //scene.rotation.x += 0.1;
+        mesh.rotation.x += 0.01;
+        renderer.render(scene, camera);
+        stats.update();
+        requestAnimationFrame(render);
+    }
+    function threeStart() {
+        initThree();//初始化 three 生成渲染器
+        initCamera();//初始化相机
+        initScene();//初始化场景
+        initLight();////初始化光源
+        initObject();//添加物体
+        render();//update
+    }
+
+</script>

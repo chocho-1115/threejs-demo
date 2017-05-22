@@ -1,0 +1,232 @@
+﻿<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Three框架</title>
+		<script src="js/three.js" data-ke-src="js/Three.js"></script>
+        <script src="js/Stats.js"></script>
+		<style type="text/css">
+            *{margin:0;padding:0;}
+            body{background:#000;}
+			div#canvas-frame {
+				border: none;
+				width: 1000px;
+				height: 600px;
+                border:8px solid #666;
+			}
+		</style>
+</head>
+<body>
+<div id="canvas-frame"></div>
+
+
+</body>
+</html>
+<script src="js/three.js" data-ke-src="js/three.js"></script>
+
+<!--
+顶点着色器
+glsl es2.0  代码
+-->
+
+<script id="vertexShader" type="x-shader/x-vertex">
+ /** 
+* 每个顶点坐标乘以模型视图矩阵在乘以投影矩阵 
+* 获得在二维屏幕上的坐标 
+*/ 
+            varying vec2 vUv;
+            void main()
+            {    
+                // passing texture to fragment shader
+                vUv = uv;
+                
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+</script>
+
+
+<!--
+片元着色器
+glsl es2.0  代码
+-->
+
+<script id="fragmentShader" type="x-shader/x-vertex">
+/** 
+* 将任意一个像元色设置为粉红 
+*/ 
+varying vec2 vUv;
+            void main() {
+                gl_FragColor = vec4(vUv.x, vUv.y, 0.0, 1.0);
+            }
+</script>
+<script>
+
+(function(){
+		
+    var renderer = null;//渲染器
+    var camera = null;//相机
+    var scene = null;//场景
+    var light = null;//光源
+    var stats = null;//统计
+    var width = 0;
+    var height = 0;
+		
+	
+	initThree();//初始化 three 生成渲染器
+	initCamera();//初始化相机
+	initScene();//初始化场景
+	initLight();////初始化光源
+	main();//添加物体
+	render();//update
+		
+    function initThree() {
+		/*+++++++++++++++++ 渲染器 ++++++++++++++++++++*/
+        width = document.getElementById('canvas-frame').clientWidth;
+        height = document.getElementById('canvas-frame').clientHeight;
+        renderer = new THREE.WebGLRenderer({
+            antialias:true,//antialias:true/false是否开启反锯齿
+            precision:"highp",//precision:highp/mediump/lowp着色精度选择
+            alpha:true,//alpha:true/false是否可以设置背景色透明
+            premultipliedAlpha:false,//?
+            stencil:false,//?
+            preserveDrawingBuffer:true,//preserveDrawingBuffer:true/false是否保存绘图缓冲
+            maxLights:1//maxLights:最大灯光数
+        });
+        renderer.setSize(width, height);
+        document.getElementById('canvas-frame').appendChild(renderer.domElement);
+        renderer.setClearColor(0x000000, 1);//背景颜色 与透明度
+
+
+		/*+++++++++++++++++ 统计对象 ++++++++++++++++++++*/
+        stats = new Stats();
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.right = '0px';
+        stats.domElement.style.top = '0px';
+        document.getElementById('canvas-frame').appendChild(stats.domElement);
+    }
+	
+	
+    function initCamera() {
+        camera = new THREE.PerspectiveCamera(
+                45,//眼睛睁开45度  角度越大画面越小  
+                width / height,//画面 纵横比
+                1,//近视锥平面
+                10000///远视锥平面
+        );//透视投影
+		
+		//var camera = THREE.OrthographicCamera = function ( left, right, top, bottom, near, far ) //正投影
+    	//var camera = THREE.CombinedCamera = function ( width, height, fov, near, far, orthonear, orthofar ) //複合投影
+		
+        camera.position.x = 0;//相机的坐标位置
+        camera.position.y = 0;
+        camera.position.z = 1000;
+        camera.up.x = 0;
+        camera.up.y = 0;
+        camera.up.z = 0;
+        camera.lookAt({x : 0, y : 0, z : 0});//设置视野的中心坐标
+    }
+	//初始化场景
+    function initScene() {
+        scene = new THREE.Scene();
+       // console.log(scene)
+    }
+	
+    function initLight() {
+		//return false
+        // A start
+		//方向光 平行光又称为方向光（Directional Light），是一组没有衰减的平行的光线，类似太阳光的效果。
+        light = new THREE.DirectionalLight(0xFF0000,1);//颜色 和 光线的强度[0-1]
+        // 位置不同，方向光作用于物体的面也不同，看到的物体各个面的颜色也不一样
+        light.position.set(1000,1000,500);
+        scene.add(light);
+        // A end
+		
+		
+		
+		var pointColor = "#ccffcc";
+        var pointLight = new THREE.PointLight(pointColor);
+        pointLight.distance = 1000;//距离，决定了光线可以照射多远
+        pointLight.intensity = 1;//强度
+		pointLight.position.set(150,150,0);
+		pointLight.visible = true;//是否可见
+		
+        scene.add(pointLight);
+		console.log(pointLight);
+		
+		
+    }
+    var mesh, mesh_;
+    function main() {
+		
+		var geometry = new THREE.CubeGeometry( 10, 100, 10,1,1,1);
+        var material = new THREE.MeshLambertMaterial( { color:0xffffff} );
+        mesh = new THREE.Mesh( geometry,material);
+        mesh.position.set(0,0,0);
+        mesh.rotation.x = 0
+        mesh.rotation.y = 0
+		mesh.rotation.z = 30*Math.PI/180
+        scene.add(mesh);
+
+        
+		var geometry = new THREE.SphereGeometry( 10, 60, 40 );//新建一个球体  半径 水平网格数  垂直网格数
+		//geometry.scale( - 1, 1, 1 );  //缩放
+		
+		var material = new THREE.MeshLambertMaterial( { color:0xffffff} );
+		var qiu = new THREE.Mesh( geometry,material);
+		qiu.position.set(300,0,0);
+		//mesh.rotation.x = 50
+		//mesh.rotation.y = -50
+		mesh.add(qiu);
+        
+		
+		
+		
+		//var geometry = new THREE.SphereGeometry( 100, 60, 40 );//新建一个球体  半径 水平网格数  垂直网格数
+		var geometry = new THREE.CubeGeometry(200, 200, 200,1,1,1)
+		//var material = new THREE.MeshLambertMaterial( { color:0xffffff} );
+		var shaderMaterial = 
+		new THREE.ShaderMaterial({ 
+		vertexShader: document.getElementById('vertexShader').textContent, 
+		fragmentShader: document.getElementById('fragmentShader').textContent,
+		//wireframe : true
+		});
+		
+		
+		mesh_ = new THREE.Mesh( geometry,shaderMaterial);
+		
+		//geometry.vertices[0].x = 200;
+		console.log(geometry);
+		console.log(mesh_);
+		
+		mesh_.position.set(300,100,0);
+		scene.add(mesh_);
+		
+		
+		
+		scene.add(mesh_);
+		
+		
+		
+    }
+    function render()
+    {
+        renderer.clear();
+		
+		if(mesh_.geometry.vertices[0].x<=200){
+			mesh_.geometry.vertices[0].x += 2;
+			mesh_.geometry.verticesNeedUpdate = true;//定点需要更新
+			mesh_.geometry.computeFaceNormals()//更新面
+		}
+        //scene.rotation.x += 0.1;
+        mesh.rotation.y += 0.01;
+		mesh_.rotation.y += 0.01;
+        renderer.render(scene, camera);
+        stats.update();
+        requestAnimationFrame(render);
+    }
+
+    
+}());
+
+</script>
+

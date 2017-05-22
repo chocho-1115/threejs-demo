@@ -1,0 +1,223 @@
+﻿<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Three框架</title>
+		<script src="js/three.js" data-ke-src="js/Three.js"></script>
+        <script src="js/Stats.js"></script>
+		<style type="text/css">
+            *{margin:0;padding:0;}
+            body{background:#000;}
+			div#canvas-frame {
+				border: none;
+				width: 1000px;
+				height: 600px;
+                border:8px solid #666;
+			}
+		</style>
+</head>
+<body>
+<div id="canvas-frame"></div>
+
+
+</body>
+</html>
+<script src="js/three.js" data-ke-src="js/three.js"></script>
+<script type="text/javascript" src="js/ConvexGeometry.js"></script>
+<script>
+
+(function(){
+		
+    var renderer = null;//渲染器
+    var camera = null;//相机
+    var scene = null;//场景
+    var light = null;//光源
+    var stats = null;//统计
+    var width = 0;
+    var height = 0;
+		
+	
+	initThree();//初始化 three 生成渲染器
+	initCamera();//初始化相机
+	initScene();//初始化场景
+	initLight();////初始化光源
+	main();//添加物体
+	render();//update
+		
+    function initThree() {
+		/*+++++++++++++++++ 渲染器 ++++++++++++++++++++*/
+        width = document.getElementById('canvas-frame').clientWidth;
+        height = document.getElementById('canvas-frame').clientHeight;
+        renderer = new THREE.WebGLRenderer({
+            antialias:true,//antialias:true/false是否开启反锯齿
+            precision:"highp",//precision:highp/mediump/lowp着色精度选择
+            alpha:true,//alpha:true/false是否可以设置背景色透明
+            premultipliedAlpha:false,//?
+            stencil:false,//?
+            preserveDrawingBuffer:true,//preserveDrawingBuffer:true/false是否保存绘图缓冲
+            maxLights:1//maxLights:最大灯光数
+        });
+        renderer.setSize(width, height);
+        document.getElementById('canvas-frame').appendChild(renderer.domElement);
+        renderer.setClearColor(0x000000, 1);//背景颜色 与透明度
+
+
+		/*+++++++++++++++++ 统计对象 ++++++++++++++++++++*/
+        stats = new Stats();
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.right = '0px';
+        stats.domElement.style.top = '0px';
+        document.getElementById('canvas-frame').appendChild(stats.domElement);
+    }
+	
+	
+    function initCamera() {
+        camera = new THREE.PerspectiveCamera(
+                45,//眼睛睁开45度  角度越大画面越小  
+                width / height,//画面 纵横比
+                1,//近视锥平面
+                10000///远视锥平面
+        );//透视投影
+		
+		//var camera = THREE.OrthographicCamera = function ( left, right, top, bottom, near, far ) //正投影
+    	//var camera = THREE.CombinedCamera = function ( width, height, fov, near, far, orthonear, orthofar ) //複合投影
+		
+        camera.position.x = 0;//相机的坐标位置
+        camera.position.y = 0;
+        camera.position.z = 100;
+        camera.up.x = 0;
+        camera.up.y = 0;
+        camera.up.z = 0;
+        camera.lookAt({x : 0, y : 0, z : 0});//设置视野的中心坐标
+    }
+	//初始化场景
+    function initScene() {
+        scene = new THREE.Scene();
+       // console.log(scene)
+    }
+	
+    function initLight() {
+		//return false
+        // A start
+		//方向光 平行光又称为方向光（Directional Light），是一组没有衰减的平行的光线，类似太阳光的效果。
+        light = new THREE.DirectionalLight(0x909090,1);//颜色 和 光线的强度[0-1]
+        // 位置不同，方向光作用于物体的面也不同，看到的物体各个面的颜色也不一样
+        light.position.set(1000,1000,500);
+        scene.add(light);
+        // A end
+		
+		
+		
+		var pointColor = "#ccffcc";
+        var pointLight = new THREE.PointLight(pointColor);
+        pointLight.distance = 1000;//距离，决定了光线可以照射多远
+        pointLight.intensity =3;//强度
+		pointLight.position.set(0,0,50);
+		pointLight.visible = true;//是否可见
+		
+        scene.add(pointLight);
+		console.log(pointLight);
+		
+		
+    }
+    var hullMesh, spGroup;
+    function main() {
+		generatePoints()
+		function generatePoints() {
+            // add 10 random spheres
+            var points = [];
+            //生成20个随机点
+            for (var i = 0; i < 20; i++) {
+                var randomX = -15 + Math.round(Math.random() * 30);
+                var randomY = -15 + Math.round(Math.random() * 30);
+                var randomZ = -15 + Math.round(Math.random() * 30);
+
+                points.push(new THREE.Vector3(randomX, randomY, randomZ));
+            }
+            
+            //将这些随机点用红色的小圆球来标识，将这些标识点的小圆球添加到集合中，然后再将该集合追加到场景中
+            spGroup = new THREE.Object3D();
+            var material = new THREE.MeshBasicMaterial({color: 0xff0000, transparent: false});
+            //每一个点都生成一个红色的圆球来标识该点
+            points.forEach(function (point) {
+
+                var spGeom = new THREE.SphereGeometry(0.2);
+                var spMesh = new THREE.Mesh(spGeom, material);
+                //网格的位置复制该点的位置
+                spMesh.position.copy(point);
+                spGroup.add(spMesh);
+            });
+            // add the points as a group to the scene
+            scene.add(spGroup);
+			
+			console.log(points)
+            // use the same points to create a convexgeometry
+            //利用这些随机点生成一个凸面体，注意这些随机点是ConvexGeometry的参数
+            var hullGeometry = new THREE.ConvexGeometry(points);
+            hullMesh = createMesh(hullGeometry);
+            scene.add(hullMesh);
+        }
+
+        function createMesh(geom) {
+console.log(geom)
+            // assign two materials
+            var meshMaterial = new THREE.MeshBasicMaterial({color: 0x909090, transparent: true, opacity: 0.1});
+            meshMaterial.side = THREE.DoubleSide;
+            var wireFrameMat = new THREE.MeshBasicMaterial();
+            wireFrameMat.wireframe = true;
+			
+			
+			/*var mapHeight = new THREE.TextureLoader().load('textures/crate.gif');//( "obj/leeperrysmith/Infinite-Level_02_Disp_NoSmoothUV-4096.jpg" );
+
+			mapHeight.anisotropy = 1;
+			mapHeight.repeat.set( 10, 10 );
+			mapHeight.offset.set( 1, 1 );
+			mapHeight.wrapS = mapHeight.wrapT = THREE.RepeatWrapping;
+			mapHeight.format = THREE.RGBFormat;
+
+			var material = new THREE.MeshPhongMaterial( {
+				color: 0x552811,
+				specular: 0x222222,
+				shininess: 25,
+				bumpMap: mapHeight,
+				bumpScale: 1
+			} );*/
+			
+			var material = new THREE.MeshPhongMaterial( { 
+				map: THREE.ImageUtils.loadTexture('textures/5.jpg'),
+				bumpMap: THREE.ImageUtils.loadTexture('textures/5.jpg'),
+				bumpScale: 0.2
+			} );
+			var bricks = [new THREE.Vector2(0, 0), new THREE.Vector2(1, 0), new THREE.Vector2(1, 1), new THREE.Vector2(0, 1)];
+			for(var i = 0;i<geom.faces.length;i++){
+				geom.faceVertexUvs[0][i] = [ bricks[0], bricks[1], bricks[3] ]
+			}
+			
+			//geometry.faceVertexUvs[0][0] = [ bricks[0], bricks[1], bricks[3] ];
+			//geometry.faceVertexUvs[0][1] = [ bricks[1], bricks[2], bricks[3] ];
+			
+            var mesh = THREE.SceneUtils.createMultiMaterialObject(geom, [ material]);//meshMaterial, wireFrameMat,  
+
+            return mesh;
+        }		
+		
+    }
+    function render()
+    {
+        renderer.clear();
+		
+		
+		spGroup.rotation.y += 0.01;
+		hullMesh.rotation.y += 0.01;
+		
+		
+        renderer.render(scene, camera);
+        stats.update();
+        requestAnimationFrame(render);
+    }
+
+    
+}());
+
+</script>
+

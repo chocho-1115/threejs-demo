@@ -1,0 +1,178 @@
+﻿<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Three框架</title>
+		<script src="js/three.js" data-ke-src="js/Three.js"></script>
+        <script src="js/Stats.js"></script>
+        <script src="js/clock.js"></script>
+		<style type="text/css">
+            *{margin:0;padding:0;}
+            body{background:#000;}
+			div#canvas-frame {
+				border: none;
+				width: 1000px;
+				height: 600px;
+                border:8px solid #666;
+			}
+		</style>
+	</head>
+    <body>
+         <div id="canvas-frame"></div>
+    </body>
+</html>
+<script>
+
+(function(){
+		
+    var renderer = null;//渲染器
+    var camera = null;//相机
+    var scene = null;//场景
+    var light = null;//光源
+    var stats = null;//统计
+    var width = 0;
+    var height = 0;
+		
+	var clockTexture = clock();
+	
+	initThree();//初始化 three 生成渲染器
+	initCamera();//初始化相机
+	initScene();//初始化场景
+	initLight();////初始化光源
+	main();//添加物体
+	render();//update
+		
+    function initThree() {
+		/*+++++++++++++++++ 渲染器 ++++++++++++++++++++*/
+        width = document.getElementById('canvas-frame').clientWidth;
+        height = document.getElementById('canvas-frame').clientHeight;
+        renderer = new THREE.WebGLRenderer({
+            antialias:true,//antialias:true/false是否开启反锯齿
+            precision:"highp",//precision:highp/mediump/lowp着色精度选择
+            alpha:true,//alpha:true/false是否可以设置背景色透明
+            premultipliedAlpha:false,//?
+            stencil:false,//?
+            preserveDrawingBuffer:true,//preserveDrawingBuffer:true/false是否保存绘图缓冲
+            maxLights:1//maxLights:最大灯光数
+        });
+        renderer.setSize(width, height);
+        document.getElementById('canvas-frame').appendChild(renderer.domElement);
+        renderer.setClearColor(0x222222, 1);//背景颜色 与透明度
+
+
+		/*+++++++++++++++++ 统计对象 ++++++++++++++++++++*/
+        stats = new Stats();
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.right = '0px';
+        stats.domElement.style.top = '0px';
+        document.getElementById('canvas-frame').appendChild(stats.domElement);
+    }
+	
+	
+    function initCamera() {
+        camera = new THREE.PerspectiveCamera(
+                45,//眼睛睁开45度  角度越大画面越小  
+                width / height,//画面 纵横比
+                1,//近视锥平面
+                10000///远视锥平面
+        );//透视投影
+		
+		//var camera = THREE.OrthographicCamera = function ( left, right, top, bottom, near, far ) //正投影
+    	//var camera = THREE.CombinedCamera = function ( width, height, fov, near, far, orthonear, orthofar ) //複合投影
+		
+        camera.position.x = 0;//相机的坐标位置
+        camera.position.y = 0;
+        camera.position.z = 1000;
+        camera.up.x = 0;
+        camera.up.y = 0;
+        camera.up.z = 0;
+        camera.lookAt({x : 0, y : 0, z : 0});//设置视野的中心坐标
+    }
+	//初始化场景
+    function initScene() {
+        scene = new THREE.Scene();
+       // console.log(scene)
+    }
+
+	
+    function initLight() {//return false
+        // A start
+		//方向光 平行光又称为方向光（Directional Light），是一组没有衰减的平行的光线，类似太阳光的效果。
+        light = new THREE.DirectionalLight(0xFF0000,1);//颜色 和 光线的强度[0-1]
+        // 位置不同，方向光作用于物体的面也不同，看到的物体各个面的颜色也不一样
+        light.position.set(0,0,1000);
+        scene.add(light);
+        // A end
+    }
+    var mesh_;
+    function main() {
+		
+		
+		var geometry = new THREE.CubeGeometry( 200, 100, 50,4,4);
+        var material = new THREE.MeshLambertMaterial( { color:0xffffff} );
+        var mesh = new THREE.Mesh( geometry,material);
+        mesh.position.set(100,0,0);
+        mesh.rotation.x = 50
+        mesh.rotation.y = -50
+        scene.add(mesh);
+
+        var geometry = new THREE.CubeGeometry(100,100,100);
+        var material = new THREE.MeshBasicMaterial({color: 0x666666});
+        var cube = new THREE.Mesh(geometry, material);
+        cube.position.x = 0;
+        cube.position.y = 200;
+        cube.position.z = 0;
+        scene.add(cube);
+		
+		
+		
+		
+		
+       
+        // A begin
+        var geometry = new THREE.PlaneGeometry( 500, 300, 1, 1 );//w h x分段  y分段
+        geometry.vertices[0].uv = new THREE.Vector2(0,0);
+        geometry.vertices[1].uv = new THREE.Vector2(1,0);
+        geometry.vertices[2].uv = new THREE.Vector2(1,1);
+        geometry.vertices[3].uv = new THREE.Vector2(0,1);
+        // A end
+        // B begin
+        // 纹理坐标怎么弄
+        var texture = THREE.ImageUtils.loadTexture("textures/4.jpg",null,function(t)
+        {
+        });
+        var material = new THREE.MeshBasicMaterial({map:texture});
+        var mesh = new THREE.Mesh( geometry,material );
+        scene.add( mesh );
+		
+		
+		
+		var geometry_ = new THREE.CubeGeometry(150, 150, 150);//正方体
+		
+		texture_ = new THREE.Texture( clockTexture );
+        var material_ = new THREE.MeshBasicMaterial({map:texture_});
+		texture_.needsUpdate = true;
+        mesh_ = new THREE.Mesh( geometry_,material_ );
+		mesh_.position.set(100,0,300);
+        scene.add( mesh_ );
+
+
+    }
+    function render()
+    {
+		
+		texture_.needsUpdate = true;
+		mesh_.rotation.y -= 0.01;
+		mesh_.rotation.x -= 0.01;
+		
+        renderer.clear();
+        //scene.rotation.x += 0.1;
+        //mesh.rotation.x += 0.01;
+        renderer.render(scene, camera);
+        stats.update();
+        requestAnimationFrame(render);
+    }
+
+    
+}());
+</script>
